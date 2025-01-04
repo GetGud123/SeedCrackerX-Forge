@@ -4,8 +4,12 @@ buildscript {
         mavenCentral()
         maven { url = 'https://repo.spongepowered.org/maven'}
         gradlePluginPortal()
-        jcenter()
-        mavenCentral()
+        }
+    }
+    
+    // The reobf block is used to reobfuscate the shadowJar, which means it will obfuscate the code in the shadowJar to make it harder to reverse-engineer.
+    reobf {
+        shadowJar {}
     }
     dependencies {
         classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
@@ -29,7 +33,8 @@ group = 'kaptainwutax.seedcrackerX' // http://maven.apache.org/guides/mini/guide
 archivesBaseName = 'seedcrackerX'
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(8) // Mojang ships Java 8 to end users, so your mod should target Java 8.
-
+def javaVersion = JavaLanguageVersion.of(8) // Define Java version as a variable
+java.toolchain.languageVersion = javaVersion // Mojang ships Java 8 to end users, so your mod should target Java 8.
 configurations {
     shade
     implementation.extendsFrom shade
@@ -138,10 +143,10 @@ repositories {
     maven { url "https://maven-snapshots.seedfinding.com/" }
     maven { url "https://jitpack.io" }
 }
-
 configurations {
     shade
-    compile.extendsFrom shade
+    implementation.extendsFrom shade
+}
 }
 
 dependencies {
@@ -168,7 +173,7 @@ dependencies {
     shade 'com.github.KaptainWutax:LattiCG:b2a338f7bd765dcd184136c2245ea5765b75edf8'
     shade 'com.seedfinding:latticg:1.05@jar'
 
-    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+    annotationProcessor 'org.spongepowered:mixin:0.8.5'
 }
 
 mixin {
@@ -187,7 +192,7 @@ jar {
             "Implementation-Version": "${version}",
             "Implementation-Vendor" :"thePlaceholder",
             "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
-            "TweakClass": "org.spongepowered.asm.launch.MixinTweaker",
+            "TweakClass": "org.spongepowered.asm.launch.MixinTweaker", // Ensure this class name is correct
             "TweakOrder": 0,
             "MixinConfigs": "seedcrackerx.mixin.json"
         ])
@@ -205,6 +210,7 @@ shadowJar {
 jar.finalizedBy('reobfJar')
 // However if you are in a multi-project build, dev time needs unobfed jar files, so you can delay the obfuscation until publishing by doing
 //publish.dependsOn('reobfJar')
+// Ensure that the shadowJar task is executed when the assemble task is run
 assemble.dependsOn shadowJar
 
 reobf {
@@ -215,11 +221,6 @@ publishing {
     publications {
         mavenJava(MavenPublication) {
             artifact jar
-        }
-    }
-    repositories {
-        maven {
-            url "file:///${project.projectDir}/mcmodsrepo"
         }
     }
 }
